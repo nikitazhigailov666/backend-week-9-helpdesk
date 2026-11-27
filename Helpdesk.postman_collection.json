@@ -1,0 +1,219 @@
+{
+  "info": {
+    "name": "Заявки в техподдержку — Жигайлов Никита",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3002"
+    },
+    {
+      "key": "id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Состояние сервера",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Проверка ответа', () => {",
+              "  pm.expect(pm.response.json().status).to.eql('ok');",
+              "  pm.expect(pm.response.headers.has('X-Request-Id')).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Создать заявку",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/tickets",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Не работает Wi-Fi\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Проверка ответа', () => {",
+              "  const ticket = pm.response.json();",
+              "  pm.expect(ticket.status).to.eql('open');",
+              "  pm.expect(ticket.id).to.be.a('string');",
+              "  pm.collectionVariables.set('id', ticket.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Получить заявку",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tickets/{{id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Проверка ответа', () => {",
+              "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('id'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Закрыть заявку",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/tickets/{{id}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"closed\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Проверка ответа', () => {",
+              "  pm.expect(pm.response.json().status).to.eql('closed');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Отфильтровать закрытые",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tickets?status=closed"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Проверка ответа', () => {",
+              "  const items = pm.response.json();",
+              "  pm.expect(items.every(ticket => ticket.status === 'closed')).to.eql(true);",
+              "  pm.expect(items.some(ticket => ticket.id === pm.collectionVariables.get('id'))).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Отклонить пустой заголовок",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/tickets",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \" \"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('Проверка ответа', () => {",
+              "  pm.expect(pm.response.json().error).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Удалить заявку",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/tickets/{{id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Проверить отсутствие заявки",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tickets/{{id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('Проверка ответа', () => {",
+              "  pm.expect(pm.response.json().error).to.eql('Заявка не найдена');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

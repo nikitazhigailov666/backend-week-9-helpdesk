@@ -1,0 +1,1 @@
+{"name":"nikita-helpdesk","version":"1.0.0","private":true,"author":"Жигайлов Никита Николаевич","scripts":{"start":"node src/server.js","test":"node --test"},"dependencies":{"express":"^5.0.0"}}
